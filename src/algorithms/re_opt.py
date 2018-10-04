@@ -3,7 +3,7 @@ import networkx as nx
 # from src.lp_mip.py import gurobi_max_weight_matching
 class re_opt_matching(object):
     """
-    Implements a patient (re-optimization) matching algorithm:
+    Implements a re-optimization matching algorithm, with multiple
     Computes a max-weight matching of the current graph,
     and matches the vertices that are about to depart.
     """
@@ -18,11 +18,6 @@ class re_opt_matching(object):
                  batch_size=1,
                  shadow_price=0
                  ):
-        """
-        method can be "nx" --> use the built-in max_weight_matching algorithm
-        or "gurobi" --> uses the MIP formulation
-        or "auction" --> uses the auction algorithm generalized to non bipartite setting
-        """
         self.name=name
         self.method = method
         self.version = '0.5'
@@ -48,16 +43,23 @@ class re_opt_matching(object):
         return self.select_matches(mate, t, state, 'all')
 
     def update_weights(self, state, t, alpha = 1.1, mode ='none'):
+        """
+        Changes
+        """
         if mode == 'none':
             pass
         elif mode == 'departing':
             for (i,j) in state.edges():
                 if i.departure(t) or j.departure(t):
                     state[i][j]["weight"] = alpha * state[i][j]["true_w"]
+                else:
+                    state[i][j]["weight"] = state[i][j]["true_w"]
         elif mode == 'waiting_time':
             for (i,j) in state.edges():
                 if i.arr_time + self.patience <= t or j.arr_time + self.patience <= t:
                     state[i][j]["weight"] = alpha * state[i][j]["true_w"]
+                else:
+                    state[i][j]["weight"] = state[i][j]["true_w"]
         elif mode == 'mult_alpha_dep':
             for (i,j) in state.edges():
                 t_i = max(i.dep_time - t, 0)
@@ -79,18 +81,9 @@ class re_opt_matching(object):
         #                                         self.learner.find_shadow_price(j), 0)
 
     def find_max_weight_matching(self, state):
-        if self.method == "nx":
-            mate = nx.algorithms.matching.max_weight_matching(state)
-            # print(mate)
-            mate = {i:j for (i,j) in mate}
-            # print(mate)
-            # change a dict into a list of pairs, remove duplicates.
-        elif self.method == "gurobi":
-            mate, value = gurobi_max_weight_matching(state, mode="mip")
-        elif self.method == "auction":
-            mate = auction_algorithm(state)
-        else:
-            assert False
+        mate = nx.algorithms.matching.max_weight_matching(state)
+        # changes output to a dictionary.
+        mate = {i:j for (i,j) in mate}
         return mate
 
     def select_matches(self, mate, t, state, mode='all', patience=0):

@@ -50,6 +50,14 @@ class parameter_set(object):
             return s
 
 def generate_sim_plan(save):
+    """
+    Input: Boolean:``save`` whether to save the results of the simulation.
+    Output: a list of parameters.
+
+    Parameters:
+    - T: number of time steps to run the simulation for
+    - random seed: r_seed. Is used to determine the directory in which to save the results.
+    """
     T = 20
     sim_plan = []
     for r_seed in [32]:
