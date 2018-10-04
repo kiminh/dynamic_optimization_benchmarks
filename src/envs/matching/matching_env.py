@@ -30,10 +30,10 @@ class matching_env(object):
         self.arrival(arriving_vertex)
         return self.state
 
-    def step(action):
+    def step(self, action):
         self.time += 1
         matched_vertices = action
-        reward = env.match(matched_vertices)
+        reward = self.match(matched_vertices)
         self.departures(self.time)
         arriving_vertex = self.vertex_generator.new_vertex(self.time)
         self.arrival(arriving_vertex)

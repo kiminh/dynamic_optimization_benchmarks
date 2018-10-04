@@ -34,54 +34,56 @@ class re_opt_matching(object):
         # if update_weight_mode == 'learned_shadow_prices':
         #     self.learner = shadow_price_learner(mode="PRA")
 
-    def find_matching(self, env, t):
+    def find_matching(self, state, prev_reward,  t):
         if self.name != 'batching' or t % self.batch_size == 0:
-            self.update_weights(env, t, self.alpha, self.update_weight_mode)
-            mate = self.find_max_weight_matching(env)
-            return self.select_matches(mate, t, env, mode = self.select_match_mode,
+            self.update_weights(state, t, self.alpha, self.update_weight_mode)
+            mate = self.find_max_weight_matching(state)
+            return self.select_matches(mate, t, state, mode = self.select_match_mode,
                                        patience = self.patience)
         else:
             return []
 
-    def final_step(self, env, t, sim):
-        mate = self.find_max_weight_matching(env)
-        return self.select_matches(mate, t, env, 'all')
+    def final_step(self, state, t):
+        mate = self.find_max_weight_matching(state)
+        return self.select_matches(mate, t, state, 'all')
 
-    def update_weights(self, env, t, alpha = 1.1, mode ='none'):
+    def update_weights(self, state, t, alpha = 1.1, mode ='none'):
         if mode == 'none':
             pass
         elif mode == 'departing':
-            for (i,j) in env.state.edges():
+            for (i,j) in state.edges():
                 if i.departure(t) or j.departure(t):
-                    env.state[i][j]["weight"] = alpha * env.state[i][j]["true_w"]
+                    state[i][j]["weight"] = alpha * state[i][j]["true_w"]
         elif mode == 'waiting_time':
-            for (i,j) in env.state.edges():
+            for (i,j) in state.edges():
                 if i.arr_time + self.patience <= t or j.arr_time + self.patience <= t:
-                    env.state[i][j]["weight"] = alpha * env.state[i][j]["true_w"]
+                    state[i][j]["weight"] = alpha * state[i][j]["true_w"]
         elif mode == 'mult_alpha_dep':
-            for (i,j) in env.state.edges():
+            for (i,j) in state.edges():
                 t_i = max(i.dep_time - t, 0)
                 t_j = max(j.dep_time - t, 0)
-                env.state[i][j]["weight"] = alpha**(- t_i - t_j) * env.state[i][j]["true_w"]
+                state[i][j]["weight"] = alpha**(- t_i - t_j) * state[i][j]["true_w"]
         elif mode == 'mult_alpha_wait':
-            for (i,j) in env.state.edges():
+            for (i,j) in state.edges():
                 t_i = max(i.arr_time + self.patience - t, 0)
                 t_j = max(j.arr_time + self.patience - t, 0)
-                env.state[i][j]["weight"] = alpha**(- t_i - t_j) * env.state[i][j]["true_w"]
+                state[i][j]["weight"] = alpha**(- t_i - t_j) * state[i][j]["true_w"]
         elif mode == 'shadow_price':
-            for (i,j) in env.state.edges():
-                env.state[i][j]["weight"] = max(env.state[i][j]["true_w"] - 2*shadow_price, 0)
+            for (i,j) in state.edges():
+                state[i][j]["weight"] = max(state[i][j]["true_w"] - 2*shadow_price, 0)
         # elif mode == 'learned_shadow_prices':
-        #     self.learner.train_step(env.state, env.last_reward)
-        #     for (i,j) in env.state.edges():
-        #         env.state[i][j]["weight"] = max(env.state[i][j]["true_w"] - \
+        #     self.learner.train_step(state, prev_reward)
+        #     for (i,j) in state.edges():
+        #         state[i][j]["weight"] = max(state[i][j]["true_w"] - \
         #                                         self.learner.find_shadow_price(i) -\
         #                                         self.learner.find_shadow_price(j), 0)
 
     def find_max_weight_matching(self, state):
         if self.method == "nx":
             mate = nx.algorithms.matching.max_weight_matching(state)
-            print(mate)
+            # print(mate)
+            mate = {i:j for (i,j) in mate}
+            # print(mate)
             # change a dict into a list of pairs, remove duplicates.
         elif self.method == "gurobi":
             mate, value = gurobi_max_weight_matching(state, mode="mip")
@@ -91,24 +93,24 @@ class re_opt_matching(object):
             assert False
         return mate
 
-    def select_matches(self, mate, t, env, mode='all', patience=0):
+    def select_matches(self, mate, t, state, mode='all', patience=0):
         if mode == 'all':
             return [(mate[k], k) for k in mate.keys() if
                        (mate[k].id <= k.id) and
-                       (env.state[k][mate[k]]['weight'] > 0)
+                       (state[k][mate[k]]['weight'] > 0)
                        ]
         elif mode == 'departing':
             return [(mate[k], k) for k in mate.keys() if
                     (k.departure(t) or mate[k].departure(t)) and
                     (mate[k].id <= k.id) and
-                    (env.state[k][mate[k]]['weight'] > 0)
+                    (state[k][mate[k]]['weight'] > 0)
                     ]
         elif mode == 'waiting_time':
             return [(mate[k], k) for k in mate.keys() if
                     (k.arr_time + patience <= t or \
                         mate[k].arr_time + patience <= t) and
                     (mate[k].id <= k.id) and
-                    (env.state[k][mate[k]]['weight'] > 0)
+                    (state[k][mate[k]]['weight'] > 0)
                     ]
         elif mode == 'PRA_waiting':
             return [(mate[k], k) for k in mate.keys() if
@@ -116,12 +118,12 @@ class re_opt_matching(object):
                      or mate[k].arr_time + (mate[k].features.loc[mate[k].data_id, "PRA"] > 80 + 1)
                         *patience <= t) and
                     (mate[k].id <= k.id) and
-                    (env.state[k][mate[k]]['weight'] > 0)
+                    (state[k][mate[k]]['weight'] > 0)
                     ]
         elif mode == 'dist_waiting':
             return [(mate[k], k) for k in mate.keys() if
                     (k.arr_time + k.features['dist'] * patience / 2.19 <= t \
                      or mate[k].arr_time + mate[k].features['dist'] * patience / 2.19 <= t) and
                     (mate[k].id <= k.id) and
-                    (env.state[k][mate[k]]['weight'] > 0)
+                    (state[k][mate[k]]['weight'] > 0)
                     ]

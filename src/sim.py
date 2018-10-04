@@ -25,6 +25,7 @@ class simulation(object):
         self.p = p
         self.runtime = -1
         self.reward = 0
+        self.run_offline = p.run_offline
         # self.count = next(self._ids)
         self.process = os.getpid()
         self.sim_results_dir = "results/" + p.results_dir + "/" + str(self.process) + ".csv"
@@ -35,13 +36,13 @@ class simulation(object):
         timer = time.time()
         env = matching_env(self.p)
         state = env.reset()
-        action = self.algorithm.find_matching(state, 0)
+        action = self.algorithm.find_matching(state, 0, 0)
         for t in range(self.time_steps):
             state, prev_reward = env.step(action)
-            action = self.algorithm.find_matching(env, prev_reward, 0)
-        final_match = self.algorithm.final_step(env, t)
-        env.match(final_match)
-        if self.offline:
+            action = self.algorithm.find_matching(state, prev_reward, 0)
+        final_match = self.algorithm.final_step(state, t)
+        state, final_reward = env.step(final_match)
+        if self.run_offline:
             self.reward = self.algorithm.find_matching(env.offline_graph)
         else:
             self.reward = env.total_reward
