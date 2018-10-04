@@ -9,7 +9,7 @@ from pathlib import Path
 
 class simulation(object):
     """
-    A full simulation
+    A simulation run of a specific algorithm on a specific environment.
     """
 
     def __init__(self, p): #time_steps, algorithm, vertex_generator, verbose=0, save=False, seed=1234):
@@ -31,27 +31,33 @@ class simulation(object):
         self.sim_results_dir = "results/" + p.results_dir + "/" + str(self.process) + ".csv"
         s = str(p)
         print("Process {}, ".format(self.process) + s)
+        self.env = matching_env(self.p)
 
     def run(self):
+        """
+        Main function to perform a simulation over self.time_steps iterations.
+        """
         timer = time.time()
-        env = matching_env(self.p)
-        state = env.reset()
+        state = self.env.reset()
         action = self.algorithm.find_matching(state, 0, 0)
         for t in range(self.time_steps):
-            state, prev_reward = env.step(action)
+            state, prev_reward = self.env.step(action)
             action = self.algorithm.find_matching(state, prev_reward, 0)
         final_match = self.algorithm.final_step(state, t)
-        state, final_reward = env.step(final_match)
+        state, final_reward = self.env.step(final_match)
         if self.run_offline:
-            self.reward = self.algorithm.find_matching(env.offline_graph)
+            self.reward = self.algorithm.find_matching(self.env.offline_graph)
         else:
-            self.reward = env.total_reward
+            self.reward = self.env.total_reward
         self.runtime = time.time() - timer
         if self.save:
             self.save_results(self.sim_results_dir)
         return self.reward
 
     def get_algorithm(self, alg, batch=1, alpha=1, threshold=0, save=False, patience=0, shadow_price=0):
+        """
+        Used to decide which algorithm to run.
+        """
         algorithms = {
             'greedy':re_opt_matching(name='greedy'),
             'batching':re_opt_matching(batch_size=batch, name='batching'),
@@ -103,25 +109,18 @@ class simulation(object):
         self.df.loc[n, "timestamp"] = str(pd.Timestamp.now()).replace(" ", "_")
         self.df.loc[n, "algorithm"] = self.algorithm.name
         self.df.loc[n, "algorithm_version"] = self.algorithm.version
-        self.df.loc[n, "arrivals"] = self.vertex_generator.mode \
-            if hasattr(self.vertex_generator, 'mode') else ""
-        self.df.loc[n, "departure_mode"] = self.vertex_generator.departure_mode \
-            if hasattr(self.vertex_generator, 'departure_mode') else ""
-        self.df.loc[n, "departure_rate"] = self.vertex_generator.departure_rate \
-            if hasattr(self.vertex_generator, 'departure_rate') else ""
-        self.df.loc[n, "arr_data_shift"] = self.vertex_generator.shift_arrivals \
-            if hasattr(self.vertex_generator, 'shift_arrivals') else 0
-        self.df.loc[n, "graph_type"] = self.vertex_generator.name
+        self.df.loc[n, "departure_mode"] = self.p.dep_mode
+        self.df.loc[n, "departure_rate"] = self.p.dep_rate
+        self.df.loc[n, "graph_type"] = self.p.vertex_generator_name
         self.df.loc[n, "iterations"] = self.time_steps
-        self.df.loc[n, "data_dir"] = self.vertex_generator.data_dir
+        self.df.loc[n, "data_dir"] = self.env.vertex_generator.data_dir
         self.df.loc[n, "seed"] = self.seed
         self.df.loc[n, "runtime"] = round(self.runtime, 3)
         self.df.loc[n, "reward"] = round(self.reward, 3)
-        if self.vertex_generator.name == "taxi":
-            self.df.loc[n, "taxi_tot_dist"] = round(self.vertex_generator.total_dist_unmatched, 3)
-            self.df.loc[n, "taxi_efficiency"] = round(1 - self.reward / self.vertex_generator.total_dist_unmatched, 3)
-        if self.algorithm.name == "batching":
-            self.df.loc[n, "batch_size"] = self.p.batch
+        if self.p.vertex_generator_name == "taxi":
+            self.df.loc[n, "taxi_tot_dist"] = round(self.env.vertex_generator.total_dist_unmatched, 3)
+            self.df.loc[n, "taxi_efficiency"] = round(1 - self.reward / self.env.vertex_generator.total_dist_unmatched, 3)
+        self.df.loc[n, "batch_size"] = self.p.batch
         self.df.loc[n, "alpha"] = self.p.alpha
         self.df.loc[n, "patience"] = self.p.patience
         self.df.loc[n, "shadow_price"] = self.p.shadow_price

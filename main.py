@@ -1,5 +1,5 @@
 from src.sim import simulation
-from src.generate_sim_plan import parameter_set, generate_sim_plan
+from generate_sim_plan import parameter_set, generate_sim_plan
 import multiprocessing as mp
 import time
 import sys
@@ -30,9 +30,9 @@ if __name__ == '__main__':
                           r_seed = 2)
         run_multiple_sim([p])
     elif len(sys.argv) == 1:
-        sys.setrecursionlimit(1500)
+        sys.setrecursionlimit(1500) # Needed to run nx.max_weight_matching on large graphs
         timer = time.time()
         sim_plan = generate_sim_plan(save=True)
-        # run_paralell_sim(sim_plan)
-        run_sim(sim_plan[0])
+        run_paralell_sim(sim_plan)
+        # run_sim(sim_plan[0])
         print("Total time = {}".format(time.time() - timer))
