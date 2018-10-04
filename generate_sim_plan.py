@@ -10,7 +10,8 @@ class parameter_set(object):
                  patience=0,
                  verbose=0,
                  results_dir = '',
-                 shadow_price=0):
+                 shadow_price=0,
+                 run_offline=False):
         self.T = T
         self.alg_name = alg
         self.vertex_generator_name = arr
@@ -27,6 +28,7 @@ class parameter_set(object):
         self.verbose = 0
         self.results_dir = results_dir
         self.shadow_price = shadow_price
+        self.run_offline = run_offline
 
     def __str__(self):
         s = "alg={}, T={}, data={}, seed={}, dep_rate={}, dep={}".format(self.alg_name, self.T,
@@ -48,7 +50,7 @@ class parameter_set(object):
             return s
 
 def generate_sim_plan(save):
-    T = 200
+    T = 20
     sim_plan = []
     for r_seed in [32]:
         sim_results_dir="results" + str(r_seed)
@@ -70,63 +72,63 @@ def generate_sim_plan(save):
                                           save=save,
                                           results_dir=sim_results_dir)
                         sim_plan.append(p)
-         #            for batch in batch_array:
-         #                alg = 'batching'
-         #                p = parameter_set(T, alg, arr, dep_rate=dep_rate,
-         #                                  r_seed = r_seed,
-         #                                  dep_mode = dep_mode,
-         #                                  batch=batch,
-         #                                  save=save,
-         #                                  results_dir=sim_results_dir)
-         #                sim_plan.append(p)
-         #                alg = 're-opt'
-         #                p = parameter_set(T, alg, arr, dep_rate=dep_rate,
-         #                                  r_seed = r_seed,
-         #                                  dep_mode = dep_mode,
-         #                                  patience=batch,
-         # # using batch_array instead of patience_array which would be the same
-         #                                  save=save,
-         #                                  results_dir=sim_results_dir)
-         #                sim_plan.append(p)
-         #            for alpha in [1.05, 1.1, 1.25, 1.5]:
-         #                p = parameter_set(T, 'd_alpha-re-opt',
-         #                                  arr,
-         #                                  dep_rate=dep_rate,
-         #                                  r_seed = r_seed,
-         #                                  dep_mode = dep_mode,
-         #                                  alpha=alpha,
-         #                                  save=save,
-         #                                  results_dir=sim_results_dir)
-         #                sim_plan.append(p)
-         #                p = parameter_set(T, 'd_mult_alpha',
-         #                                  arr,
-         #                                  dep_rate=dep_rate,
-         #                                  r_seed = r_seed,
-         #                                  dep_mode = dep_mode,
-         #                                  alpha= 1 + (alpha - 1) / 2 ,
-         #                                  save=save,
-         #                                  results_dir=sim_results_dir)
-         #                sim_plan.append(p)
-         #                for patience in batch_array:
-         #                    alg = 'alpha-re-opt'
-         #                    p = parameter_set(T, alg, arr, dep_rate=dep_rate,
-         #                                      r_seed = r_seed,
-         #                                      alpha=alpha,
-         #                                      dep_mode = dep_mode,
-         #                                      save=save,
-         #                                      results_dir=sim_results_dir,
-         #                                      patience=patience)
-         #                    sim_plan.append(p)
-         #                    p = parameter_set(T, 'mult_alpha',
-         #                                      arr,
-         #                                      dep_rate=dep_rate,
-         #                                      r_seed = r_seed,
-         #                                      dep_mode = dep_mode,
-         #                                      alpha= 1 + (alpha - 1) / 2 ,
-         #                                      save=save,
-         #                                      results_dir=sim_results_dir,
-         #                                      patience = patience)
-         #                    sim_plan.append(p)
+                    for batch in batch_array:
+                        alg = 'batching'
+                        p = parameter_set(T, alg, arr, dep_rate=dep_rate,
+                                          r_seed = r_seed,
+                                          dep_mode = dep_mode,
+                                          batch=batch,
+                                          save=save,
+                                          results_dir=sim_results_dir)
+                        sim_plan.append(p)
+                        alg = 're-opt'
+                        p = parameter_set(T, alg, arr, dep_rate=dep_rate,
+                                          r_seed = r_seed,
+                                          dep_mode = dep_mode,
+                                          patience=batch,
+         # using batch_array instead of patience_array which would be the same
+                                          save=save,
+                                          results_dir=sim_results_dir)
+                        sim_plan.append(p)
+                    for alpha in [1.05, 1.1, 1.25, 1.5]:
+                        p = parameter_set(T, 'd_alpha-re-opt',
+                                          arr,
+                                          dep_rate=dep_rate,
+                                          r_seed = r_seed,
+                                          dep_mode = dep_mode,
+                                          alpha=alpha,
+                                          save=save,
+                                          results_dir=sim_results_dir)
+                        sim_plan.append(p)
+                        p = parameter_set(T, 'd_mult_alpha',
+                                          arr,
+                                          dep_rate=dep_rate,
+                                          r_seed = r_seed,
+                                          dep_mode = dep_mode,
+                                          alpha= 1 + (alpha - 1) / 2 ,
+                                          save=save,
+                                          results_dir=sim_results_dir)
+                        sim_plan.append(p)
+                        for patience in batch_array:
+                            alg = 'alpha-re-opt'
+                            p = parameter_set(T, alg, arr, dep_rate=dep_rate,
+                                              r_seed = r_seed,
+                                              alpha=alpha,
+                                              dep_mode = dep_mode,
+                                              save=save,
+                                              results_dir=sim_results_dir,
+                                              patience=patience)
+                            sim_plan.append(p)
+                            p = parameter_set(T, 'mult_alpha',
+                                              arr,
+                                              dep_rate=dep_rate,
+                                              r_seed = r_seed,
+                                              dep_mode = dep_mode,
+                                              alpha= 1 + (alpha - 1) / 2 ,
+                                              save=save,
+                                              results_dir=sim_results_dir,
+                                              patience = patience)
+                            sim_plan.append(p)
                     # for shadow_price in [0.1, 0.3, 0.5, 0.7, 0.8, 0.9]:
                     #     alg = 'shadow_price'
                     #     p = parameter_set(T, alg, arr, dep_rate=dep_rate,
