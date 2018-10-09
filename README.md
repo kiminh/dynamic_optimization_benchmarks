@@ -6,10 +6,10 @@ The code is divided into two parts:
 - The environments, which implement the specifics of the dynamic optimization problems.
 - The algorithms, which implement various ideas from the dynamic optimization literature.
 
-## 1. Quickstart
+## 1. Quickstart examples
 
-### Running code for the figures in ??
-Run ``file main.py``.
+### Running code for the figures in [``Maximizing Efficiency in Dynamic Matching Markets``](https://arxiv.org/abs/1803.01285)
+Run ``main.py``.
 
 ### Running algorithms with custom parameters
 Edit file ``generate_sim_plan``.
@@ -49,6 +49,5 @@ When information about critical vertices is not available, it is estimated when
 vertices have been waiting for some number of time periods, which is controlled
 by a ``patience`` parameter.
 
-### $\alpha$-Re-Opt.
-This works similarly to Re-Opt, except that the weights are now biased by a factor
-$\alpha \in [1,2]$ towards ``critical`` vertices.
+### 𝛼-Re-Opt.
+This works similarly to Re-Opt, except that the weights of ``critical`` vertices are now increased by a factor 𝛼 ∈ [1,2] before running the max-weight-matching algorithm.
